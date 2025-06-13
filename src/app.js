@@ -1,27 +1,19 @@
 import { createInterface } from 'readline';
-
-// Create interface for reading input
+import PromptController from './Controllers/PromptController.js';
 const rl = createInterface({
   input: process.stdin,
   output: process.stdout
 });
+async function main() {
 
-// Simple script to get quote design preferences
-
-// Main function to run the script
-function main() {
-  // Get number of designs needed
-  rl.question("How many quote designs would you like to create? ", (numberOfDesigns) => {
-    // Parse input to number
+  rl.question("How many quote designs would you like to create? ", async (numberOfDesigns) => {
     const designCount = parseInt(numberOfDesigns);
-
-    // Validate input
     if (isNaN(designCount) || designCount <= 0) {
       console.log("Please enter a valid number greater than 0.");
       rl.close();
       return;
     } else {
-      // Show available quote types
+  
       console.log("\nAvailable Quote Types:");
       console.log("------------------------");
       console.log("1. Motivational Quotes");
@@ -30,10 +22,7 @@ function main() {
       console.log("4. Positive Calm Quotes");
       console.log("5. Life Lessons Quote");
       console.log("------------------------");
-      
-      // Get quote type selection
-      rl.question("Please select a quote type (enter number): ", (quoteType) => {
-        // Get quote type name based on selection
+      rl.question("Please select a quote type (enter number): ", async (quoteType) => {
         let quoteTypeName = "";
         switch(quoteType) {
           case "1":
@@ -54,12 +43,17 @@ function main() {
           default:
             quoteTypeName = "Unknown Quote Type";
         }
-        
-        // Display the summary of user choices
         console.log(`\nYou selected: ${designCount} designs of ${quoteTypeName}`);
         console.log("Custom designs will be created based on your selection.");
+        console.log("------------------------");
+        console.log("Generating Quotes...");
+       let prompts = await PromptController.getQuotePrompts(designCount, quoteTypeName);
+       console.log("------------------------");
+       for(let prompt of prompts){
+        console.log(`Quote: ${prompt.quote}`);
+       }
+       console.log("------------------------");
         
-        // Close the readline interface
         rl.close();
       });
     }
