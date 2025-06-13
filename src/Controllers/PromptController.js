@@ -55,6 +55,9 @@ Please check this list carefully and generate completely NEW and UNIQUE quotes t
 
             const generatedQuotes = response.data.choices[0].message.content;
             
+            // Debug: Log the raw response
+            // console.log('Raw API Response:', generatedQuotes);
+            
             // Remove code block markers if present
             let cleanedResponse = generatedQuotes.trim();
             if (cleanedResponse.startsWith('```json')) {
@@ -64,7 +67,48 @@ Please check this list carefully and generate completely NEW and UNIQUE quotes t
                 cleanedResponse = cleanedResponse.replace(/```\n?/, '').replace(/\n?```$/, '');
             }
             
-            const quotesArray = JSON.parse(cleanedResponse);
+            // Debug: Log cleaned response
+            // console.log('Cleaned Response of Prompt Controller:', cleanedResponse);
+            
+            // Check if cleanedResponse is empty or invalid
+            if (!cleanedResponse || cleanedResponse.trim() === '') {
+                throw new Error('Empty response from API');
+            }
+            
+            // Try to find JSON in the response
+            let jsonMatch = cleanedResponse.match(/\[[\s\S]*\]/);
+            if (jsonMatch) {
+                cleanedResponse = jsonMatch[0];
+            }
+            
+            // Additional cleanup for common issues
+            cleanedResponse = cleanedResponse
+                .replace(/,\s*\]/g, ']') // Remove trailing commas
+                .replace(/,\s*\}/g, '}'); // Remove trailing commas in objects
+            
+            let quotesArray;
+            try {
+                quotesArray = JSON.parse(cleanedResponse);
+            } catch (parseError) {
+                console.error('JSON Parse Error:', parseError.message);
+                console.error('Attempting to parse:', cleanedResponse);
+                
+                // Fallback: Try to extract quotes manually
+                const quoteMatches = cleanedResponse.match(/"quote":\s*"([^"]+)"/g);
+                if (quoteMatches) {
+                    quotesArray = quoteMatches.map(match => {
+                        const quote = match.match(/"quote":\s*"([^"]+)"/)[1];
+                        return { quote };
+                    });
+                } else {
+                    throw new Error('Could not parse quotes from response');
+                }
+            }
+            
+            // Validate the parsed array
+            if (!Array.isArray(quotesArray) || quotesArray.length === 0) {
+                throw new Error('Invalid quotes array format');
+            }
             
             // Add new quotes to existing quotes
             const updatedQuotes = [...existingQuotes, ...quotesArray];

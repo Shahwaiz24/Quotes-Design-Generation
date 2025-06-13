@@ -1,5 +1,6 @@
 import { createInterface } from 'readline';
 import PromptController from './Controllers/PromptController.js';
+import DesignController from './Controllers/DesignController.js';
 const rl = createInterface({
   input: process.stdin,
   output: process.stdout
@@ -72,6 +73,20 @@ async function main() {
             console.log(`Quote: ${prompt.quote}`);
           }
           console.log("------------------------");
+          const loadingCharacters = ['|', '/', '-', '\\'];
+          let a = 0;
+          const loadingTimeInterval = setInterval(() => {
+            process.stdout.write(`\rGenerating Quotes Designs... ${loadingCharacters[a % loadingCharacters.length]}`);
+            a++;
+          }, 200);
+         
+           await DesignController.QuoteDesigns(prompts);
+           clearInterval(loadingTimeInterval);
+           process.stdout.write("\rGenerating Quotes Designs... Done!   \n");
+           console.log("------------------------");
+           console.log("Quotes Designs Generated Successfully!");
+           console.log("------------------------");
+
         } catch (error) {
           // Clear loading animation
           clearInterval(loadingInterval);
