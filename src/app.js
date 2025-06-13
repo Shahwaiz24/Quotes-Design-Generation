@@ -47,7 +47,6 @@ async function main() {
         
         console.log(`\nYou selected: ${designCount} designs of ${quoteTypeName}`);
         
-        // Check if unknown quote type was selected
         if (quoteTypeName === "Unknown Quote Type") {
           console.log("Invalid quote type selected. Program will exit.");
           rl.close();
@@ -57,15 +56,17 @@ async function main() {
         console.log("Custom designs will be created based on your selection.");
         console.log("------------------------");
         
-        // Loading animation
         const loadingChars = ['|', '/', '-', '\\'];
         let i = 0;
         const loadingInterval = setInterval(() => {
           process.stdout.write(`\rGenerating Quotes... ${loadingChars[i % loadingChars.length]}`);
           i++;
         }, 200);
+        
+        let prompts;
         try {
-          let prompts = await PromptController.getQuotePrompts(designCount, quoteTypeName);
+          prompts = await PromptController.getQuotePrompts(designCount, quoteTypeName);
+          
           clearInterval(loadingInterval);
           process.stdout.write("\rGenerating Quotes... Done!   \n");
           console.log("------------------------");
@@ -73,28 +74,35 @@ async function main() {
             console.log(`Quote: ${prompt.quote}`);
           }
           console.log("------------------------");
+          
           const loadingCharacters = ['|', '/', '-', '\\'];
           let a = 0;
           const loadingTimeInterval = setInterval(() => {
             process.stdout.write(`\rGenerating Quotes Designs... ${loadingCharacters[a % loadingCharacters.length]}`);
             a++;
           }, 200);
-         
-           await DesignController.QuoteDesigns(prompts);
-           clearInterval(loadingTimeInterval);
-           process.stdout.write("\rGenerating Quotes Designs... Done!   \n");
-           console.log("------------------------");
-           console.log("Quotes Designs Generated Successfully!");
-           console.log("------------------------");
-
-        } catch (error) {
-          // Clear loading animation
+          
+          try {
+            await DesignController.QuoteDesigns(prompts);
+            
+            clearInterval(loadingTimeInterval);
+            process.stdout.write("\rGenerating Quotes Designs... Done!   \n");
+            console.log("------------------------");
+            console.log("Quotes Designs Generated Successfully!");
+            console.log("------------------------");
+          } catch (designError) {
+            clearInterval(loadingTimeInterval);
+            process.stdout.write("\r                                      \r");
+            
+            console.log("Error generating quote designs:");
+            console.log(designError.message || designError);
+          }
+        } catch (quoteError) {
           clearInterval(loadingInterval);
           process.stdout.write("\r                          \r");
           
-          // Display error
           console.log("Error generating quotes:");
-          console.log(error.message || error);
+          console.log(quoteError.message || quoteError);
         } finally {
           rl.close();
         }
@@ -103,5 +111,4 @@ async function main() {
   });
 }
 
-// Run the script
 main();

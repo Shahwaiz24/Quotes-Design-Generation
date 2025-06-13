@@ -8,18 +8,12 @@ class DesignController {
     
     static async QuoteDesigns(quotes) {
         try {
-            // Create quotes directory if it doesn't exist
             const quotesDir = path.join(process.cwd(), 'public', 'quotes');
             if (!fs.existsSync(quotesDir)) {
                 fs.mkdirSync(quotesDir, { recursive: true });
             }
-
-            // Process each quote one by one
             for (let i = 0; i < quotes.length; i++) {
                 const quote = quotes[i].quote;
-                console.log(`Generating designs for quote ${i + 1}: "${quote}"`);
-
-                // Create folder for this quote (clean quote text for folder name)
                 const folderName = quote.replace(/[^\w\s]/gi, '').replace(/\s+/g, '_').substring(0, 50);
                 const quoteFolderPath = path.join(quotesDir, folderName);
                 
@@ -28,10 +22,7 @@ class DesignController {
                 }
 
                 try {
-                    // Generate a unique UUID for this task
                     const taskUUID = uuidv4();
-                    
-                    // New request structure
                     const requestBody = [
                         {
                             "taskType": "imageInference",
@@ -53,30 +44,19 @@ class DesignController {
                             'Content-Type': 'application/json'
                         }
                     });
-                    
-                    console.log(`Response: ${JSON.stringify(response.data, null, 2)}`);
-
-                    // Handle response - now expecting 2 results
                     if (response.data && response.data.data) {
                         const results = response.data.data;
                         
                         for (let designNum = 0; designNum < results.length; designNum++) {
                             const imageUrl = results[designNum].imageURL;
-                            
-                            // Download the image
                             const imageResponse = await axios.get(imageUrl, {
                                 responseType: 'arraybuffer'
                             });
-                            
-                            // Save the image to quote's folder
                             const imagePath = path.join(quoteFolderPath, `design_${designNum + 1}.png`);
                             fs.writeFileSync(imagePath, imageResponse.data);
                             
-                            console.log(`✅ Design ${designNum + 1} saved: ${imagePath}`);
                         }
                     }
-
-                    // Add delay between requests to avoid rate limiting
                     await new Promise(resolve => setTimeout(resolve, 2000));
 
                 } catch (designError) {
@@ -84,7 +64,6 @@ class DesignController {
                 }
             }
 
-            console.log('🎉 All quote designs generated successfully!');
             return { success: true, message: 'All designs generated and saved' };
 
         } catch (error) {
