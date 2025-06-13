@@ -4,6 +4,18 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
 class DesignController {
+    static apiKeys = [
+        "nUcKpfqYutli7BgyP3OiLGn61v8CFDP3",
+        "r2jRpIXXQxth9MmR6zRWCEJJQqQYyDAq",
+        "hCvRsjhc72kygfMQG4nohqLE27cHqcsF",
+        "A2cCkeji7MGXvbiDtgC3pLMBzwVhUrxv",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+    ];
     static apiKey = "r2jRpIXXQxth9MmR6zRWCEJJQqQYyDAq";
     
     static async QuoteDesigns(quotes) {
