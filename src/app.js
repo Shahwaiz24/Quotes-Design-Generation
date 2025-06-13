@@ -63,15 +63,10 @@ async function main() {
           process.stdout.write(`\rGenerating Quotes... ${loadingChars[i % loadingChars.length]}`);
           i++;
         }, 200);
-        
         try {
-          // Get quotes
           let prompts = await PromptController.getQuotePrompts(designCount, quoteTypeName);
-          
-          // Clear loading animation
           clearInterval(loadingInterval);
           process.stdout.write("\rGenerating Quotes... Done!   \n");
-          
           console.log("------------------------");
           for(let prompt of prompts){
             console.log(`Quote: ${prompt.quote}`);
