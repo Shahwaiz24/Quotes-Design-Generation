@@ -43,18 +43,51 @@ async function main() {
           default:
             quoteTypeName = "Unknown Quote Type";
         }
+        
         console.log(`\nYou selected: ${designCount} designs of ${quoteTypeName}`);
+        
+        // Check if unknown quote type was selected
+        if (quoteTypeName === "Unknown Quote Type") {
+          console.log("Invalid quote type selected. Program will exit.");
+          rl.close();
+          return;
+        }
+        
         console.log("Custom designs will be created based on your selection.");
         console.log("------------------------");
-        console.log("Generating Quotes...");
-       let prompts = await PromptController.getQuotePrompts(designCount, quoteTypeName);
-       console.log("------------------------");
-       for(let prompt of prompts){
-        console.log(`Quote: ${prompt.quote}`);
-       }
-       console.log("------------------------");
         
-        rl.close();
+        // Loading animation
+        const loadingChars = ['|', '/', '-', '\\'];
+        let i = 0;
+        const loadingInterval = setInterval(() => {
+          process.stdout.write(`\rGenerating Quotes... ${loadingChars[i % loadingChars.length]}`);
+          i++;
+        }, 200);
+        
+        try {
+          // Get quotes
+          let prompts = await PromptController.getQuotePrompts(designCount, quoteTypeName);
+          
+          // Clear loading animation
+          clearInterval(loadingInterval);
+          process.stdout.write("\rGenerating Quotes... Done!   \n");
+          
+          console.log("------------------------");
+          for(let prompt of prompts){
+            console.log(`Quote: ${prompt.quote}`);
+          }
+          console.log("------------------------");
+        } catch (error) {
+          // Clear loading animation
+          clearInterval(loadingInterval);
+          process.stdout.write("\r                          \r");
+          
+          // Display error
+          console.log("Error generating quotes:");
+          console.log(error.message || error);
+        } finally {
+          rl.close();
+        }
       });
     }
   });
