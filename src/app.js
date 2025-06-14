@@ -92,6 +92,9 @@ async function main() {
             console.log("------------------------");
             console.log("Quotes Designs Generated Successfully!");
             console.log("------------------------");
+            console.log("Please Wait Almost 1 Minute to Again Start Program");
+            console.log("------------------------");
+          
           } catch (designError) {
             clearInterval(loadingTimeInterval);
             process.stdout.write("\r                                      \r");

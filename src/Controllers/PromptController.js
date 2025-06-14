@@ -1,14 +1,18 @@
-import axios from 'axios';
+import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
 
 class PromptController {
-    // Array of OpenRouter API keys for fallback mechanism
-    static apiKeys = [
-        "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",
-        "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",
-        "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"
-    ];
+    // A4F API Configuration
+    static modelId = "provider-5/gpt-4.1-nano";
+    static apiKey = "ddc-a4f-dd7fdfcac2e8492bb90e20523c21a373";
+    static baseUrl = 'https://api.a4f.co/v1';
+    
+    // Initialize A4F client
+    static a4fClient = new OpenAI({
+        apiKey: this.apiKey,
+        baseURL: this.baseUrl,
+    });
 
     static async getQuotePrompts(numberOfPrompts, typeOfQuotes) {
         try {
@@ -28,19 +32,13 @@ class PromptController {
             // Base64 encode the existing quotes to handle large data
             const encodedExistingQuotes = Buffer.from(JSON.stringify(existingQuotes)).toString('base64');
 
-            // Try each API key until successful
-            let response = null;
-            let lastError = null;
-            
-            for (const apiKey of this.apiKeys) {
-                try {
-                    
-                    response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
-                        model: "deepseek/deepseek-r1",
-                        messages: [
-                            {
-                                role: "user",
-                                content: `Generate ${numberOfPrompts} modern and simple ${typeOfQuotes} quotes. Each quote should be approximately 1.5 lines long, similar to this length: "I'm Not Lazy, i'm in energy saving mode". Make them catchy and impressive.
+            // Single API call using A4F client
+            const response = await this.a4fClient.chat.completions.create({
+                model: this.modelId,
+                messages: [
+                    {
+                        role: "user",
+                        content: `Generate ${numberOfPrompts} modern and simple ${typeOfQuotes} quotes. Each quote should be approximately 1.5 lines long, similar to this length: "I'm Not Lazy, i'm in energy saving mode". Make them catchy and impressive.
 
 IMPORTANT REQUIREMENTS:
 1. For each quote, also identify the most ATTRACTIVE, EYE-CATCHING, and ESSENTIAL keyword from that quote
@@ -80,33 +78,13 @@ EXAMPLE FORMAT:
 }]
 
 Make sure each keyword is the most impactful word from its respective quote that would catch the eye and represent the essence of the quote.`
-                            }
-                        ],
-                        max_tokens: 1500,
-                        temperature: 0.8
-                    }, {
-                        headers: {
-                            'Authorization': `Bearer ${apiKey}`,
-                            'Content-Type': 'application/json',
-                            'HTTP-Referer': 'http://localhost:3000',
-                            'X-Title': 'Quote Generator'
-                        }
-                    });
-                    
-                    break;
-                } catch (error) {
-                    console.log(`API key failed: ${error.message}`);
-                    lastError = error;
-                    // Continue to next API key
-                }
-            }
+                    }
+                ],
+                max_tokens: 1500,
+                temperature: 0.8
+            });
 
-            // If all API keys failed
-            if (!response) {
-                throw new Error(`All API keys failed. Last error: ${lastError?.message || 'Unknown error'}`);
-            }
-
-            const generatedQuotes = response.data.choices[0].message.content;
+            const generatedQuotes = response.choices[0].message.content;
             let cleanedResponse = generatedQuotes.trim();
 
             // Remove markdown code blocks if present
