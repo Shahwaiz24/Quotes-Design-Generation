@@ -3,7 +3,12 @@ import fs from 'fs';
 import path from 'path';
 
 class PromptController {
-    static apiKey = "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";
+    // Array of OpenRouter API keys for fallback mechanism
+    static apiKeys = [
+        "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",
+        "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",
+        "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"
+    ];
 
     static async getQuotePrompts(numberOfPrompts, typeOfQuotes) {
         try {
@@ -20,12 +25,22 @@ class PromptController {
                 existingQuotes = [];
             }
 
-            const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
-                model: "deepseek/deepseek-r1",
-                messages: [
-                    {
-                        role: "user",
-                        content: `Generate ${numberOfPrompts} modern and simple ${typeOfQuotes} quotes. Each quote should be approximately 1.5 lines long, similar to this length: "I'm Not Lazy, i'm in energy saving mode". Make them catchy and impressive.
+            // Base64 encode the existing quotes to handle large data
+            const encodedExistingQuotes = Buffer.from(JSON.stringify(existingQuotes)).toString('base64');
+
+            // Try each API key until successful
+            let response = null;
+            let lastError = null;
+            
+            for (const apiKey of this.apiKeys) {
+                try {
+                    
+                    response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
+                        model: "deepseek/deepseek-r1",
+                        messages: [
+                            {
+                                role: "user",
+                                content: `Generate ${numberOfPrompts} modern and simple ${typeOfQuotes} quotes. Each quote should be approximately 1.5 lines long, similar to this length: "I'm Not Lazy, i'm in energy saving mode". Make them catchy and impressive.
 
 IMPORTANT REQUIREMENTS:
 1. For each quote, also identify the most ATTRACTIVE, EYE-CATCHING, and ESSENTIAL keyword from that quote
@@ -33,8 +48,12 @@ IMPORTANT REQUIREMENTS:
 3. Choose the word that would be most visually impactful and meaningful
 4. The keyword should be a SINGLE WORD only (no phrases)
 
-AVOID DUPLICATES: Here are the existing quotes that you MUST avoid generating (don't create any similar or duplicate quotes):
-${JSON.stringify(existingQuotes, null, 2)}
+AVOID DUPLICATES: I'm sending the existing quotes as a base64 encoded string. Please decode it to avoid duplicates:
+${encodedExistingQuotes}
+
+To decode the base64 string: 
+1. Convert from base64 to a string
+2. Parse the resulting string as JSON to get the array of existing quotes
 
 Please check this list carefully and generate completely NEW and UNIQUE quotes that are not similar to any of the above. 
 
@@ -61,18 +80,31 @@ EXAMPLE FORMAT:
 }]
 
 Make sure each keyword is the most impactful word from its respective quote that would catch the eye and represent the essence of the quote.`
-                    }
-                ],
-                max_tokens: 1500,
-                temperature: 0.8
-            }, {
-                headers: {
-                    'Authorization': `Bearer ${this.apiKey}`,
-                    'Content-Type': 'application/json',
-                    'HTTP-Referer': 'http://localhost:3000',
-                    'X-Title': 'Quote Generator'
+                            }
+                        ],
+                        max_tokens: 1500,
+                        temperature: 0.8
+                    }, {
+                        headers: {
+                            'Authorization': `Bearer ${apiKey}`,
+                            'Content-Type': 'application/json',
+                            'HTTP-Referer': 'http://localhost:3000',
+                            'X-Title': 'Quote Generator'
+                        }
+                    });
+                    
+                    break;
+                } catch (error) {
+                    console.log(`API key failed: ${error.message}`);
+                    lastError = error;
+                    // Continue to next API key
                 }
-            });
+            }
+
+            // If all API keys failed
+            if (!response) {
+                throw new Error(`All API keys failed. Last error: ${lastError?.message || 'Unknown error'}`);
+            }
 
             const generatedQuotes = response.data.choices[0].message.content;
             let cleanedResponse = generatedQuotes.trim();
